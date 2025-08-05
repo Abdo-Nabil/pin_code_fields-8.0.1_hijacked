@@ -214,6 +214,10 @@ class PinCodeTextField extends StatefulWidget {
   /// Builds separator children
   final IndexedWidgetBuilder? separatorBuilder;
 
+  /// This is used to show your custom show dialog function if you have
+  /// si you have the full control on the paste dialog
+  final Function? showPasteDialogCustomFunction;
+
   PinCodeTextField({
     Key? key,
     required this.appContext,
@@ -279,6 +283,7 @@ class PinCodeTextField extends StatefulWidget {
     this.useExternalAutoFillGroup = false,
     this.scrollPadding = const EdgeInsets.all(20),
     this.separatorBuilder,
+    this.showPasteDialogCustomFunction,
   })  : assert(obscuringCharacter.isNotEmpty),
         super(key: key);
 
@@ -693,7 +698,7 @@ class _PinCodeTextFieldState extends State<PinCodeTextField>
     );
   }
 
-  Future<void> _showPasteDialog(String pastedText) {
+  Future<void> _showPasteDialog(String pastedText) async {
     final formattedPastedText = pastedText
         .trim()
         .substring(0, min(pastedText.trim().length, widget.length));
@@ -703,61 +708,66 @@ class _PinCodeTextFieldState extends State<PinCodeTextField>
       color: Theme.of(context).colorScheme.onSecondary,
     );
 
-    return showDialog(
-      context: context,
-      useRootNavigator: true,
-      builder: (context) => _dialogConfig.platform == PinCodePlatform.iOS
-          ? CupertinoAlertDialog(
-              title: Text(_dialogConfig.dialogTitle!),
-              content: RichText(
-                text: TextSpan(
-                  text: _dialogConfig.dialogContent,
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.labelLarge!.color,
+    widget.showPasteDialogCustomFunction != null
+        ? widget.showPasteDialogCustomFunction!(formattedPastedText)
+        : showDialog(
+            context: context,
+            useRootNavigator: true,
+            builder: (context) => _dialogConfig.platform == PinCodePlatform.iOS
+                ? CupertinoAlertDialog(
+                    title: Text(_dialogConfig.dialogTitle!),
+                    content: RichText(
+                      text: TextSpan(
+                        text: _dialogConfig.dialogContent,
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.labelLarge!.color,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: formattedPastedText,
+                            style: widget.pastedTextStyle ??
+                                defaultPastedTextStyle,
+                          ),
+                          // TextSpan(
+                          //   text: "?",
+                          //   style: TextStyle(
+                          //     color: Theme.of(context).textTheme.labelLarge!.color,
+                          //   ),
+                          // )
+                        ],
+                      ),
+                    ),
+                    actions: _getActionButtons(formattedPastedText),
+                  )
+                : AlertDialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    title: Text(_dialogConfig.dialogTitle!),
+                    content: RichText(
+                      text: TextSpan(
+                        text: _dialogConfig.dialogContent,
+                        style: TextStyle(
+                            color:
+                                Theme.of(context).textTheme.labelLarge!.color),
+                        children: [
+                          TextSpan(
+                            text: formattedPastedText,
+                            style: widget.pastedTextStyle ??
+                                defaultPastedTextStyle,
+                          ),
+                          // TextSpan(
+                          //   text: " ?",
+                          //   style: TextStyle(
+                          //     color: Theme.of(context).textTheme.labelLarge!.color,
+                          //   ),
+                          // )
+                        ],
+                      ),
+                    ),
+                    actions: _getActionButtons(formattedPastedText),
                   ),
-                  children: [
-                    TextSpan(
-                      text: formattedPastedText,
-                      style: widget.pastedTextStyle ?? defaultPastedTextStyle,
-                    ),
-                    // TextSpan(
-                    //   text: "?",
-                    //   style: TextStyle(
-                    //     color: Theme.of(context).textTheme.labelLarge!.color,
-                    //   ),
-                    // )
-                  ],
-                ),
-              ),
-              actions: _getActionButtons(formattedPastedText),
-            )
-          : AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              title: Text(_dialogConfig.dialogTitle!),
-              content: RichText(
-                text: TextSpan(
-                  text: _dialogConfig.dialogContent,
-                  style: TextStyle(
-                      color: Theme.of(context).textTheme.labelLarge!.color),
-                  children: [
-                    TextSpan(
-                      text: formattedPastedText,
-                      style: widget.pastedTextStyle ?? defaultPastedTextStyle,
-                    ),
-                    // TextSpan(
-                    //   text: " ?",
-                    //   style: TextStyle(
-                    //     color: Theme.of(context).textTheme.labelLarge!.color,
-                    //   ),
-                    // )
-                  ],
-                ),
-              ),
-              actions: _getActionButtons(formattedPastedText),
-            ),
-    );
+          );
   }
 
   @override
